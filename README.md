@@ -4,7 +4,7 @@ An example package to subscribe to ROS images and process them using OpenCV
 ## Download & Compile
 ```sh
 cd ~/catkin_ws/src
-git clone https://github.com/Maxy53/EGH450_Group_9/
+git clone https://github.com/Maxy53/egh450_image_processor/
 cd ~/catkin_ws
 catkin_make
 source ~/catkin_ws/devel/setup.bash
