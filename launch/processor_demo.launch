@@ -2,7 +2,7 @@
 <launch>
 	<!-- Processor Node -->
 	<node pkg="egh450_image_processor" type="processor" name="processor" clear_params="true" output="screen">
-		<param name="cascade_file" value="$(find egh450_image_processor)/data/cascade_KYE.xml"/>
+		<param name="cascade_file" value="$(find egh450_image_processor)/data/bluetriangleDetector20_Haar.xml"/>
 
 		<!-- Setting this to true will tell the program to use "~image_raw" + "/compressed" instead -->
 		<param name="use_compressed" value="true" type="bool"/>
