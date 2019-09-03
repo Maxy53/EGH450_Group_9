@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <launch>
 	<!-- Processor Node -->
-	<node pkg="EGH450_Group_9" type="processor" name="processor" clear_params="true" output="screen">
+	<node pkg="egh450_image_processor" type="processor" name="processor" clear_params="true" output="screen">
 		<param name="cascade_file" value="$(find egh450_image_processor)/data/cascade_KYE.xml"/>
 
 		<!-- Setting this to true will tell the program to use "~image_raw" + "/compressed" instead -->
