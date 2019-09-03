@@ -9,6 +9,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CompressedImage
 from sensor_msgs.msg import CameraInfo
+import tf2_ros
 
 class ImageProcessor():
 	def __init__(self):
@@ -31,18 +32,18 @@ class ImageProcessor():
 		self.param_val_max = rospy.get_param("~val_max", 255)
 
 		# Set additional camera parameters
-		self.got_camera_info = False
+		self.got_camera_info = True
 		self.camera_matrix = None
 		self.dist_coeffs = None
 
 		# Set up the publishers, subscribers, and tf2
-		self.sub_info = rospy.Subscriber("~camera_info", CameraInfo, self.callback_info)
+		#self.sub_info = rospy.Subscriber("~camera_info", CameraInfo, self.callback_info)
 
 		if self.param_use_compressed:
-			self.sub_img = rospy.Subscriber("~image/compressed", CompressedImage, self.callback_img)
+			self.sub_img = rospy.Subscriber("~image_raw/compressed", CompressedImage, self.callback_img)
 			self.pub_mask = rospy.Publisher("~debug/image/compressed", CompressedImage, queue_size=1)
 			self.pub_overlay = rospy.Publisher("~overlay/image/compressed", CompressedImage, queue_size=1)
-			self.pub_img = rospy.Publisher("~image/compressed")
+			#self.pub_img = rospy.Publisher("~image/compressed", CompressedImage, queue_size=1)
 		else:
 			self.sub_img = rospy.Subscriber("~image_raw", Image, self.callback_img)
 			self.pub_mask = rospy.Publisher("~debug/image_raw", Image, queue_size=1)
@@ -71,10 +72,9 @@ class ImageProcessor():
 
 	def callback_img(self, msg_in):
 		# Don't bother to process image if we don't have the camera calibration
+		cv_image = None		
 		if self.got_camera_info:
 			#Convert ROS image to CV image
-			cv_image = None
-
 			try:
 				if self.param_use_compressed:
 					cv_image = self.bridge.compressed_imgmsg_to_cv2( msg_in, "bgr8" )
@@ -84,19 +84,40 @@ class ImageProcessor():
 				rospy.loginfo(e)
 				return
 
-		# ===================
-		# Do processing here!
-		# ===================
-		gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+		if cv_image is not None:
+			# ===================
+			# Do processing here!
+			# ===================
+			gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
 
-		sign = self.sign_cascade.detectMultiScale(gray, 1.01, 1, minSize=(100,100))
+			sign = self.sign_cascade.detectMultiScale(gray, 1.01, 1, minSize=(100,100))
 
-		for (x,y,w,h) in sign:
-			cv2.rectangle(cv_image,(x,y),(x+w,y+h),(255,0,0),2)
-		# ===================
+			for (x,y,w,h) in sign:
+				cv2.rectangle(cv_image,(x,y),(x+w,y+h),(255,0,0),2)
+			# ===================
 
-		# Convert CV image to ROS image and publish
-		try:
-			self.pub_img.publish( self.bridge.cv2_to_compressed_imgmsg( cv_image ) )
-		except CvBridgeError as e:
-			print(e)
+			# Convert CV image to ROS image and publish
+			try:
+				self.pub_overlay.publish( self.bridge.cv2_to_compressed_imgmsg( cv_image ) )
+				self.pub_mask.publish( self.bridge.cv2_to_compressed_imgmsg( gray ) )
+			except CvBridgeError as e:
+				print(e)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
