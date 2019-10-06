@@ -3,6 +3,7 @@
 import sys
 import rospy
 import cv2
+import numpy as np
 from std_msgs.msg import String
 from sensor_msgs.msg import CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
@@ -23,16 +24,16 @@ class ImageProcessor():
 
 		# Load in parameters from ROS
 		self.param_use_compressed = rospy.get_param("~use_compressed", False)
-		self.param_circle_radius = rospy.get_param("~circle_radius", 1.0)
+		#self.param_circle_radius = rospy.get_param("~circle_radius", 1.0)
 		self.param_hue_center = rospy.get_param("~hue_center", 170)
-		self.param_hue_range = rospy.get_param("~hue_range", 20) / 2
+		self.param_hue_range = rospy.get_param("~hue_range", 250) / 2
 		self.param_sat_min = rospy.get_param("~sat_min", 50)
 		self.param_sat_max = rospy.get_param("~sat_max", 255)
 		self.param_val_min = rospy.get_param("~val_min", 50)
 		self.param_val_max = rospy.get_param("~val_max", 255)
 
 		# Set additional camera parameters
-		self.got_camera_info = True
+		self.got_camera_info = False
 		self.camera_matrix = None
 		self.dist_coeffs = None
 
@@ -84,11 +85,15 @@ class ImageProcessor():
 				rospy.loginfo(e)
 				return
 
+			# Image mask for colour filtering
+			mask_image = self.process_image(cv_image)
+
 		if cv_image is not None:
 			# ===================
 			# Do processing here!
 			# ===================
-			gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+			#gray = cv2.cvtColor(mask_image, cv2.COLOR_HSV2GRAY)
+			gray = mask_image
 
 			sign = self.sign_cascade.detectMultiScale(gray, 1.01, 1, minSize=(100,100))
 
@@ -103,7 +108,36 @@ class ImageProcessor():
 			except CvBridgeError as e:
 				print(e)
 
+	def process_image(self, cv_image):
+		#Convert the image to HSV and prepare the mask
+		hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
+		mask_image = None
 
+		hue_lower = (self.param_hue_center - self.param_hue_range) % 180
+		hue_upper = (self.param_hue_center + self.param_hue_range) % 180
+
+		thresh_lower = np.array([hue_lower, self.param_val_min, self.param_val_min])
+		thresh_upper = np.array([hue_upper, self.param_val_max, self.param_val_max])
+
+
+		if hue_lower > hue_upper:
+			# We need to do a wrap around HSV 180 to 0 if the user wants to mask this color
+			thresh_lower_wrap = np.array([180, self.param_sat_max, self.param_val_max])
+			thresh_upper_wrap = np.array([0, self.param_sat_min, self.param_val_min])
+
+			mask_lower = cv2.inRange(hsv_image, thresh_lower, thresh_lower_wrap)
+			mask_upper = cv2.inRange(hsv_image, thresh_upper_wrap, thresh_upper)
+
+			mask_image = cv2.bitwise_or(mask_lower, mask_upper)
+		else:
+			# Otherwise do a simple mask
+			mask_image = cv2.inRange(hsv_image, thresh_lower, thresh_upper)
+
+		# Refine image to get better results
+		kernel = np.ones((5,5),np.uint8)
+		mask_image = cv2.morphologyEx(mask_image, cv2.MORPH_OPEN, kernel)
+
+		return mask_image
 
 
 
