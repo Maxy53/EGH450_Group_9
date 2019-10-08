@@ -2,10 +2,13 @@
 <launch>
 	<!-- Processor Node -->
 	<node pkg="egh450_image_processor" type="processor" name="processor" clear_params="true" output="screen">
-		<param name="cascade_file" value="$(find egh450_image_processor)/data/bluetriangleDetector20_Haar.xml"/>
-
+		<param name="cascade_file" value="$(find egh450_image_processor)/data/osd20_Haar2.xml"/>
+		<param name="triangle_radius" value="0.156" type="double"/>
+		<param name="square_radius" value="0.152" type="double"/>
 		<!-- Setting this to true will tell the program to use "~image_raw" + "/compressed" instead -->
 		<param name="use_compressed" value="true" type="bool"/>
+
+		<!-- Need to add HSV params -->
 
 		<!-- Topic remappings to connect to the correct camera -->
 		<remap from="~camera_info" to="/raspicam_node/camera_info"/>
