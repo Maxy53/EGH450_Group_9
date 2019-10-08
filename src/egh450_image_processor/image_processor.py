@@ -86,7 +86,9 @@ class ImageProcessor():
 
 	def callback_img(self, msg_in):
 		# Don't bother to process image if we don't have the camera calibration
-		cv_image = None		
+		cv_image = None	
+		self.model_image = None	
+		success = False;
 		if self.got_camera_info:
 			#Convert ROS image to CV image
 			try:
@@ -112,7 +114,32 @@ class ImageProcessor():
 
 			for (x,y,w,h) in sign:
 				cv2.rectangle(cv_image,(x,y),(x+w,y+h),(255,0,0),2)
-			# ===================
+				# ===================
+
+				self.model_image = np.array([
+											(x, y),
+											(x+w, y+h),
+											(x+w, y-h),
+											(x-w, y+h),
+											(x-w, y-h)])
+
+			# Do the SolvePnP method
+			(success, rvec, tvec) = cv2.solvePnP(self.model_object, self.model_image, self.camera_matrix, self.dist_coeffs)
+
+			# If a result was found, send to TF2
+			if success:
+				msg_out = TransformStamped()
+				msg_out.header = msg_in.header
+				msg_out.child_frame_id = "triangle"
+				msg_out.transform.translation.x = tvec[0]
+				msg_out.transform.translation.y = tvec[1]
+				msg_out.transform.translation.z = tvec[2]
+				msg_out.transform.rotation.w = 1.0	# Could use rvec, but need to convert from DCM to quaternion first
+				msg_out.transform.rotation.x = 0.0
+				msg_out.transform.rotation.y = 0.0
+				msg_out.transform.rotation.z = 0.0
+
+				self.tfbr.sendTransform(msg_out)
 
 			# Convert CV image to ROS image and publish
 			try:
