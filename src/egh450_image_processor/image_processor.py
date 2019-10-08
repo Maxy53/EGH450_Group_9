@@ -11,6 +11,7 @@ from sensor_msgs.msg import Image
 from sensor_msgs.msg import CompressedImage
 from sensor_msgs.msg import CameraInfo
 import tf2_ros
+from geometry_msgs.msg import TransformStamped
 
 class ImageProcessor():
 	def __init__(self):
@@ -24,7 +25,9 @@ class ImageProcessor():
 
 		# Load in parameters from ROS
 		self.param_use_compressed = rospy.get_param("~use_compressed", False)
-		#self.param_circle_radius = rospy.get_param("~circle_radius", 1.0)
+		self.param_triangle_radius = rospy.get_param("~triangle_radius", 1.0)
+		self.param_square_radius = rospy.get_param("~square_radius", 1.0)
+
 		self.param_hue_center = rospy.get_param("~hue_center", 170)
 		self.param_hue_range = rospy.get_param("~hue_range", 250) / 2
 		self.param_sat_min = rospy.get_param("~sat_min", 50)
@@ -38,7 +41,7 @@ class ImageProcessor():
 		self.dist_coeffs = None
 
 		# Set up the publishers, subscribers, and tf2
-		#self.sub_info = rospy.Subscriber("~camera_info", CameraInfo, self.callback_info)
+		self.sub_info = rospy.Subscriber("~camera_info", CameraInfo, self.callback_info)
 
 		if self.param_use_compressed:
 			self.sub_img = rospy.Subscriber("~image_raw/compressed", CompressedImage, self.callback_img)
@@ -51,6 +54,16 @@ class ImageProcessor():
 			self.pub_overlay = rospy.Publisher("~overlay/image_raw", Image, queue_size=1)
 
 		self.tfbr = tf2_ros.TransformBroadcaster()
+
+		# Generate the model for the pose solver
+		# For this example, draw a square around where the circle should be
+		# There are 5 points, one in the center, and one in each corner
+		r = self.param_triangle_radius
+		self.model_object = np.array([(0.0, 0.0, 0.0),
+										(r, r, 0.0),
+										(r, -r, 0.0),
+										(-r, r, 0.0),
+										(-r, -r, 0.0)])
 
 	def shutdown(self):
 		# Unregister anything that needs it here
