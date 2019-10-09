@@ -28,12 +28,21 @@ class ImageProcessor():
 		self.param_triangle_radius = rospy.get_param("~triangle_radius", 1.0)
 		self.param_square_radius = rospy.get_param("~square_radius", 1.0)
 
-		self.param_hue_center = rospy.get_param("~hue_center", 170)
-		self.param_hue_range = rospy.get_param("~hue_range", 250) / 2
-		self.param_sat_min = rospy.get_param("~sat_min", 50)
+		# Orange Square
+		self.param_hue_center = rospy.get_param("~hue_center", 35)
+		self.param_hue_range = rospy.get_param("~hue_range", 60) / 2
+		self.param_sat_min = rospy.get_param("~sat_min", 100)
 		self.param_sat_max = rospy.get_param("~sat_max", 255)
-		self.param_val_min = rospy.get_param("~val_min", 50)
+		self.param_val_min = rospy.get_param("~val_min", 100)
 		self.param_val_max = rospy.get_param("~val_max", 255)
+
+		# Blue Triangle
+		self.param_hue_center2 = rospy.get_param("~hue_center2", 170)
+		self.param_hue_range2 = rospy.get_param("~hue_range2", 250) / 2
+		self.param_sat_min2 = rospy.get_param("~sat_min2", 50)
+		self.param_sat_max2 = rospy.get_param("~sat_max2", 255)
+		self.param_val_min2 = rospy.get_param("~val_min2", 50)
+		self.param_val_max2 = rospy.get_param("~val_max2", 255)
 
 		# Set additional camera parameters
 		self.got_camera_info = False
@@ -124,7 +133,7 @@ class ImageProcessor():
 											(x-w, y-h)])
 
 			# Do the SolvePnP method
-			(success, rvec, tvec) = cv2.solvePnP(self.model_object, self.model_image, self.camera_matrix, self.dist_coeffs)
+			#(success, rvec, tvec) = cv2.solvePnP(self.model_object, self.model_image, self.camera_matrix, self.dist_coeffs)
 
 			# If a result was found, send to TF2
 			if success:

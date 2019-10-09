@@ -2,13 +2,27 @@
 <launch>
 	<!-- Processor Node -->
 	<node pkg="egh450_image_processor" type="processor" name="processor" clear_params="true" output="screen">
-		<param name="cascade_file" value="$(find egh450_image_processor)/data/btd20_06102019_Haar2.xml"/>
+		<param name="cascade_file" value="$(find egh450_image_processor)/data/osd20_Haar2.xml"/>
 		<param name="triangle_radius" value="0.156" type="double"/>
 		<param name="square_radius" value="0.152" type="double"/>
 		<!-- Setting this to true will tell the program to use "~image_raw" + "/compressed" instead -->
 		<param name="use_compressed" value="true" type="bool"/>
 
-		<!-- Need to add HSV params -->
+		<!-- HSV parameters are in OpenCV range [H:0->180;S:0->255;V:0->255] Square Orange
+		<param name="hue_center" value="60" type="int"/>
+		<param name="hue_range" value="30" type="int"/>
+		<param name="val_min" value="100" type="int"/>
+		<param name="sat_max" value="255" type="int"/>
+		<param name="val_min" value="100" type="int"/>
+		<param name="val_max" value="255" type="int"/> -->
+
+		<!-- HSV parameters are in OpenCV range [H:0->180;S:0->255;V:0->255] Triangle Blue
+		<param name="hue_center" value="60" type="int"/>
+		<param name="hue_range" value="30" type="int"/>
+		<param name="val_min" value="100" type="int"/>
+		<param name="sat_max" value="255" type="int"/>
+		<param name="val_min" value="100" type="int"/>
+		<param name="val_max" value="255" type="int"/> -->
 
 		<!-- Topic remappings to connect to the correct camera -->
 		<remap from="~camera_info" to="/raspicam_node/camera_info"/>
