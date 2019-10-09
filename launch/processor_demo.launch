@@ -2,7 +2,7 @@
 <launch>
 	<!-- Processor Node -->
 	<node pkg="egh450_image_processor" type="processor" name="processor" clear_params="true" output="screen">
-		<param name="cascade_file" value="$(find egh450_image_processor)/data/osd20_Haar2.xml"/>
+		<param name="cascade_file" value="$(find egh450_image_processor)/data/btd20_28092019_Haar2.xml"/>
 		<param name="triangle_radius" value="0.156" type="double"/>
 		<param name="square_radius" value="0.152" type="double"/>
 		<!-- Setting this to true will tell the program to use "~image_raw" + "/compressed" instead -->
