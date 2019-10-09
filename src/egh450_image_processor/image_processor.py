@@ -15,6 +15,7 @@ from geometry_msgs.msg import TransformStamped
 
 class ImageProcessor():
 	def __init__(self):
+		self.time_finished_processing = rospy.Time(0)
 		# Get the path to the cascade XML training file using ROS parameters
 		# Then load in our cascade classifier
 		sign_cascade_file = str(rospy.get_param("~cascade_file"))
@@ -29,20 +30,20 @@ class ImageProcessor():
 		self.param_square_radius = rospy.get_param("~square_radius", 1.0)
 
 		# Orange Square
-		self.param_hue_center = rospy.get_param("~hue_center", 35)
-		self.param_hue_range = rospy.get_param("~hue_range", 60) / 2
-		self.param_sat_min = rospy.get_param("~sat_min", 100)
-		self.param_sat_max = rospy.get_param("~sat_max", 255)
-		self.param_val_min = rospy.get_param("~val_min", 100)
-		self.param_val_max = rospy.get_param("~val_max", 255)
+		self.param_hue_center2 = rospy.get_param("~hue_center", 30)
+		self.param_hue_range2 = rospy.get_param("~hue_range", 60) / 2
+		self.param_sat_min2 = rospy.get_param("~sat_min", 100)
+		self.param_sat_max2 = rospy.get_param("~sat_max", 255)
+		self.param_val_min2 = rospy.get_param("~val_min", 100)
+		self.param_val_max2 = rospy.get_param("~val_max", 255)
 
 		# Blue Triangle
-		self.param_hue_center2 = rospy.get_param("~hue_center2", 170)
-		self.param_hue_range2 = rospy.get_param("~hue_range2", 250) / 2
-		self.param_sat_min2 = rospy.get_param("~sat_min2", 50)
-		self.param_sat_max2 = rospy.get_param("~sat_max2", 255)
-		self.param_val_min2 = rospy.get_param("~val_min2", 50)
-		self.param_val_max2 = rospy.get_param("~val_max2", 255)
+		self.param_hue_center = rospy.get_param("~hue_center2", 170)
+		self.param_hue_range = rospy.get_param("~hue_range2", 250) / 2
+		self.param_sat_min = rospy.get_param("~sat_min2", 50)
+		self.param_sat_max = rospy.get_param("~sat_max2", 255)
+		self.param_val_min = rospy.get_param("~val_min2", 50)
+		self.param_val_max = rospy.get_param("~val_max2", 255)
 
 		# Set additional camera parameters
 		self.got_camera_info = False
@@ -94,68 +95,71 @@ class ImageProcessor():
 			self.got_camera_info = True
 
 	def callback_img(self, msg_in):
-		# Don't bother to process image if we don't have the camera calibration
-		cv_image = None	
-		self.model_image = None	
-		success = False;
-		if self.got_camera_info:
-			#Convert ROS image to CV image
-			try:
-				if self.param_use_compressed:
-					cv_image = self.bridge.compressed_imgmsg_to_cv2( msg_in, "bgr8" )
-				else:
-					cv_image = self.bridge.imgmsg_to_cv2( msg_in, "bgr8" )
-			except CvBridgeError as e:
-				rospy.loginfo(e)
-				return
+		if msg_in.header.stamp > self.time_finished_processing:
+			# Don't bother to process image if we don't have the camera calibration
+			cv_image = None	
+			self.model_image = None	
+			success = False;
+			if self.got_camera_info:
+				#Convert ROS image to CV image
+				try:
+					if self.param_use_compressed:
+						cv_image = self.bridge.compressed_imgmsg_to_cv2( msg_in, "bgr8" )
+					else:
+						cv_image = self.bridge.imgmsg_to_cv2( msg_in, "bgr8" )
+				except CvBridgeError as e:
+					rospy.loginfo(e)
+					return
 
-			# Image mask for colour filtering
-			mask_image = self.process_image(cv_image)
+				# Image mask for colour filtering
+				mask_image = self.process_image(cv_image)
 
-		if cv_image is not None:
-			# ===================
-			# Do processing here!
-			# ===================
-			#gray = cv2.cvtColor(mask_image, cv2.COLOR_HSV2GRAY)
-			gray = mask_image
+			if cv_image is not None:
+				# ===================
+				# Do processing here!
+				# ===================
+				#gray = cv2.cvtColor(mask_image, cv2.COLOR_HSV2GRAY)
+				gray = mask_image
 
-			sign = self.sign_cascade.detectMultiScale(gray, 1.01, 1, minSize=(100,100))
+				sign = self.sign_cascade.detectMultiScale(gray, 1.01, 1, minSize=(100,100))
 
-			for (x,y,w,h) in sign:
-				cv2.rectangle(cv_image,(x,y),(x+w,y+h),(255,0,0),2)
+				for (x,y,w,h) in sign:
+					cv2.rectangle(cv_image,(x,y),(x+w,y+h),(255,0,0),2)
 				# ===================
 
-				self.model_image = np.array([
+					self.model_image = np.array([
 											(x, y),
 											(x+w, y+h),
 											(x+w, y-h),
 											(x-w, y+h),
 											(x-w, y-h)])
 
-			# Do the SolvePnP method
-			#(success, rvec, tvec) = cv2.solvePnP(self.model_object, self.model_image, self.camera_matrix, self.dist_coeffs)
+				# Do the SolvePnP method
+				#(success, rvec, tvec) = cv2.solvePnP(self.model_object, self.model_image, self.camera_matrix, self.dist_coeffs)
 
-			# If a result was found, send to TF2
-			if success:
-				msg_out = TransformStamped()
-				msg_out.header = msg_in.header
-				msg_out.child_frame_id = "triangle"
-				msg_out.transform.translation.x = tvec[0]
-				msg_out.transform.translation.y = tvec[1]
-				msg_out.transform.translation.z = tvec[2]
-				msg_out.transform.rotation.w = 1.0	# Could use rvec, but need to convert from DCM to quaternion first
-				msg_out.transform.rotation.x = 0.0
-				msg_out.transform.rotation.y = 0.0
-				msg_out.transform.rotation.z = 0.0
+				# If a result was found, send to TF2
+				if success:
+					msg_out = TransformStamped()
+					msg_out.header = msg_in.header
+					msg_out.child_frame_id = "triangle"
+					msg_out.transform.translation.x = tvec[0]
+					msg_out.transform.translation.y = tvec[1]
+					msg_out.transform.translation.z = tvec[2]
+					msg_out.transform.rotation.w = 1.0	# Could use rvec, but need to convert from DCM to quaternion first
+					msg_out.transform.rotation.x = 0.0
+					msg_out.transform.rotation.y = 0.0
+					msg_out.transform.rotation.z = 0.0
 
-				self.tfbr.sendTransform(msg_out)
+					self.tfbr.sendTransform(msg_out)
 
-			# Convert CV image to ROS image and publish
-			try:
-				self.pub_overlay.publish( self.bridge.cv2_to_compressed_imgmsg( cv_image ) )
-				self.pub_mask.publish( self.bridge.cv2_to_compressed_imgmsg( gray ) )
-			except CvBridgeError as e:
-				print(e)
+				self.time_finished_processing = rospy.Time.now()
+				# Convert CV image to ROS image and publish
+				try:
+					self.pub_overlay.publish( self.bridge.cv2_to_compressed_imgmsg( cv_image ) )
+					self.pub_mask.publish( self.bridge.cv2_to_compressed_imgmsg( gray ) )
+				except CvBridgeError as e:
+					print(e)
+		
 
 	def process_image(self, cv_image):
 		#Convert the image to HSV and prepare the mask
