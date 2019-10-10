@@ -70,10 +70,10 @@ class ImageProcessor():
 		# There are 5 points, one in the center, and one in each corner
 		r = self.param_triangle_radius
 		self.model_object = np.array([(0.0, 0.0, 0.0),
-										(r, r, 0.0),
-										(r, -r, 0.0),
-										(-r, r, 0.0),
-										(-r, -r, 0.0)])
+					      (r, r, 0.0),
+					      (r, -r, 0.0),
+					      (-r, r, 0.0),
+					      (-r, -r, 0.0)], dtype=np.float64)
 
 	def shutdown(self):
 		# Unregister anything that needs it here
@@ -119,23 +119,31 @@ class ImageProcessor():
 				# Do processing here!
 				# ===================
 				#gray = cv2.cvtColor(mask_image, cv2.COLOR_HSV2GRAY)
-				gray = mask_image
+				#gray = mask_image
 
-				sign = self.sign_cascade.detectMultiScale(gray, 1.01, 1, minSize=(100,100))
+				sign = self.sign_cascade.detectMultiScale(mask_image, 1.01, 1, minSize=(25,25))
 
 				for (x,y,w,h) in sign:
 					cv2.rectangle(cv_image,(x,y),(x+w,y+h),(255,0,0),2)
-				# ===================
-
 					self.model_image = np.array([
 											(x, y),
 											(x+w, y+h),
 											(x+w, y-h),
 											(x-w, y+h),
-											(x-w, y-h)])
+											(x-w, y-h)], dtype=np.float64)
 
 				# Do the SolvePnP method
-				#(success, rvec, tvec) = cv2.solvePnP(self.model_object, self.model_image, self.camera_matrix, self.dist_coeffs)
+				if self.model_image is not None:
+					(success, rvec, tvec) = cv2.solvePnP(self.model_object, self.model_image, self.camera_matrix, self.dist_coeffs)
+					#print('x transform [cm]')
+					#print(tvec[0]*100)
+					#print('\n')
+					#print('y transform [cm]')
+					#print(tvec[1]*100)
+					#print('\n')
+					#print('z transform [cm]')
+					#print(tvec[2]*100)
+					#print('\n')
 
 				# If a result was found, send to TF2
 				if success:
@@ -156,7 +164,7 @@ class ImageProcessor():
 				# Convert CV image to ROS image and publish
 				try:
 					self.pub_overlay.publish( self.bridge.cv2_to_compressed_imgmsg( cv_image ) )
-					self.pub_mask.publish( self.bridge.cv2_to_compressed_imgmsg( gray ) )
+					self.pub_mask.publish( self.bridge.cv2_to_compressed_imgmsg( mask_image ) )
 				except CvBridgeError as e:
 					print(e)
 		
