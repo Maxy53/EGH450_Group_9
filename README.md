@@ -8,7 +8,7 @@ git clone https://github.com/Maxy53/egh450_image_processor/
 cd ~/catkin_ws
 catkin_make
 source ~/catkin_ws/devel/setup.bash
-chmod +rwx src -R
+sudo chmod +rwx src -R
 ```
 
 ## Usage
