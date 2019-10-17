@@ -34,7 +34,7 @@ class ImageProcessor():
 
 		# Orange Square
 		self.param_hue_center_square = rospy.get_param("~hue_center_square", 30)
-		self.param_hue_range_square = rospy.get_param("~hue_range_square", 90) / 2
+		self.param_hue_range_square = rospy.get_param("~hue_range_square", 30) / 2
 		self.param_sat_min_square = rospy.get_param("~sat_min_square", 75)
 		self.param_sat_max_square = rospy.get_param("~sat_max_square", 255)
 		self.param_val_min_square = rospy.get_param("~val_min_square", 100)
@@ -42,7 +42,7 @@ class ImageProcessor():
 
 		# Blue Triangle
 		self.param_hue_center_triangle = rospy.get_param("~hue_center_triangle", 170)
-		self.param_hue_range_triangle = rospy.get_param("~hue_range_triangle", 250) / 2
+		self.param_hue_range_triangle = rospy.get_param("~hue_range_triangle", 30) / 2
 		self.param_sat_min_triangle = rospy.get_param("~sat_min_triangle", 50)
 		self.param_sat_max_triangle = rospy.get_param("~sat_max_triangle", 255)
 		self.param_val_min_triangle = rospy.get_param("~val_min_triangle", 50)
