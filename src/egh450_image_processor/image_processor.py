@@ -18,8 +18,8 @@ class ImageProcessor():
 		self.time_finished_processing = rospy.Time(0)
 		# Get the path to the cascade XML training file using ROS parameters
 		# Then load in our cascade classifier
-		sign_cascade_file_triangle = str(rospy.get_param("~cascade_file_triangle"))
-		self.sign_cascade_triangle = cv2.CascadeClassifier(sign_cascade_file_triangle)
+		#sign_cascade_file_triangle = str(rospy.get_param("~cascade_file_triangle"))
+		#self.sign_cascade_triangle = cv2.CascadeClassifier(sign_cascade_file_triangle)
 
 		sign_cascade_file_square = str(rospy.get_param("~cascade_file_square"))
 		self.sign_cascade_square = cv2.CascadeClassifier(sign_cascade_file_square)
@@ -112,7 +112,7 @@ class ImageProcessor():
 			self.model_image_square = None	
 			self.model_image_triangle = None	
 			success_square = False;
-			success_triangle = False;
+			#success_triangle = False;
 			if self.got_camera_info:
 				#Convert ROS image to CV image
 				try:
@@ -125,7 +125,7 @@ class ImageProcessor():
 					return
 
 				# Image mask for colour filtering
-				mask_image_square = self.process_image(cv_image, 1)
+				mask_image_square = self.process_image(cv_image)
 				#mask_image_triangle = self.process_image(cv_image, 2)
 
 			if cv_image is not None:
@@ -183,32 +183,32 @@ class ImageProcessor():
 					print(e)
 		
 
-	def process_image(self, cv_image, process_type):
+	def process_image(self, cv_image):
 		#Convert the image to HSV and prepare the mask
 		hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
 		mask_image = None
 
-		if process_type == 1: #Square
+		
 
-			hue_lower_square = (self.param_hue_center_square - self.param_hue_range_square) % 180
-			hue_upper_square = (self.param_hue_center_square + self.param_hue_range_square) % 180
+		hue_lower_square = (self.param_hue_center_square - self.param_hue_range_square) % 180
+		hue_upper_square = (self.param_hue_center_square + self.param_hue_range_square) % 180
 
-			thresh_lower_square = np.array([hue_lower_square, self.param_val_min_square, self.param_val_min_square])
-			thresh_upper_square = np.array([hue_upper_square, self.param_val_max_square, self.param_val_max_square])
+		thresh_lower_square = np.array([hue_lower_square, self.param_val_min_square, self.param_val_min_square])
+		thresh_upper_square = np.array([hue_upper_square, self.param_val_max_square, self.param_val_max_square])
 
 
-			if hue_lower_square > hue_upper_square:
-				# We need to do a wrap around HSV 180 to 0 if the user wants to mask this color
-				thresh_lower_wrap_square = np.array([180, self.param_sat_max_square, self.param_val_max_square])
-				thresh_upper_wrap_square = np.array([0, self.param_sat_min_square, self.param_val_min_square])
+		if hue_lower_square > hue_upper_square:
+			# We need to do a wrap around HSV 180 to 0 if the user wants to mask this color
+			thresh_lower_wrap_square = np.array([180, self.param_sat_max_square, self.param_val_max_square])
+			thresh_upper_wrap_square = np.array([0, self.param_sat_min_square, self.param_val_min_square])
 
-				mask_lower_square = cv2.inRange(hsv_image, thresh_lower_square, thresh_lower_wrap_square)
-				mask_upper_square = cv2.inRange(hsv_image, thresh_upper_wrap_square, thresh_upper_square)
+			mask_lower_square = cv2.inRange(hsv_image, thresh_lower_square, thresh_lower_wrap_square)
+			mask_upper_square = cv2.inRange(hsv_image, thresh_upper_wrap_square, thresh_upper_square)
 
-				mask_image = cv2.bitwise_or(mask_lower_square, mask_upper_square)
-			else:
-				# Otherwise do a simple mask
-				mask_image = cv2.inRange(hsv_image, thresh_lower_square, thresh_upper_square)
+			mask_image = cv2.bitwise_or(mask_lower_square, mask_upper_square)
+		else:
+			# Otherwise do a simple mask
+			mask_image = cv2.inRange(hsv_image, thresh_lower_square, thresh_upper_square)
 
 		# Refine image to get better results
 		kernel = np.ones((5,5),np.uint8)
